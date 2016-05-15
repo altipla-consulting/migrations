@@ -22,9 +22,11 @@ type AppliedMigration struct {
 }
 
 func Run(db *sqlx.DB, migrations []M) error {
-	log.Println("--- Migrations found:", len(migrations))
+	return errors.Trace(RunConnection(db, schema.NewConnection(db.DB), migrations))
+}
 
-	conn := schema.NewConnection(db.DB)
+func RunConnection(db *sqlx.DB, conn *schema.Connection, migrations []M) error {
+	log.Println("--- Migrations found:", len(migrations))
 
 	log.Println("--- Check migrations table")
 	columns := []schema.Column{
