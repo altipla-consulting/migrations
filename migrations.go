@@ -3,6 +3,7 @@ package migrations
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/altipla-consulting/schema"
@@ -10,6 +11,10 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/juju/errors"
 )
+
+// Logger that will be used to show the progress of the migrations. It can be
+// overriden by test to output nothing.
+var Logger = log.New(os.Stderr, "", log.LstdFlags)
 
 type M struct {
 	Name  string
@@ -26,9 +31,9 @@ func Run(db *sqlx.DB, migrations []M) error {
 }
 
 func RunConnection(db *sqlx.DB, conn *schema.Connection, migrations []M) error {
-	log.Println("--- Migrations found:", len(migrations))
+	Logger.Println("--- Migrations found:", len(migrations))
 
-	log.Println("--- Check migrations table")
+	Logger.Println("--- Check migrations table")
 	columns := []schema.Column{
 		column.String("name", 191).PrimaryKey(),
 		column.DateTime("runned_at").DefaultCurrent(),
@@ -49,7 +54,7 @@ func RunConnection(db *sqlx.DB, conn *schema.Connection, migrations []M) error {
 	for i, migration := range migrations {
 		name := fmt.Sprintf("%03d_%s", i, migration.Name)
 		if !applied[name] {
-			log.Println("--- Apply migration:", name)
+			Logger.Println("--- Apply migration:", name)
 			if err := migration.Apply(db, conn); err != nil {
 				return errors.Annotatef(err, "migration %s failed", name)
 			}
@@ -60,6 +65,6 @@ func RunConnection(db *sqlx.DB, conn *schema.Connection, migrations []M) error {
 		}
 	}
 
-	log.Println("--- Migrations applied successfully!")
+	Logger.Println("--- Migrations applied successfully!")
 	return nil
 }
