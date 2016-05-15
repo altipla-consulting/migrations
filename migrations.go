@@ -21,7 +21,7 @@ type AppliedMigration struct {
 	RunnedAt time.Time
 }
 
-func Migrate(db *sqlx.DB, migrations []Migration) error {
+func Run(db *sqlx.DB, migrations []Migration) error {
 	log.Println("--- Migrations found:", len(migrations))
 
 	conn := schema.NewConnection(db.DB)
