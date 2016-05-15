@@ -11,7 +11,7 @@ import (
 	"github.com/juju/errors"
 )
 
-type Migration struct {
+type M struct {
 	Name  string
 	Apply func(db *sqlx.DB, conn *schema.Connection) error
 }
@@ -21,7 +21,7 @@ type AppliedMigration struct {
 	RunnedAt time.Time
 }
 
-func Run(db *sqlx.DB, migrations []Migration) error {
+func Run(db *sqlx.DB, migrations []M) error {
 	log.Println("--- Migrations found:", len(migrations))
 
 	conn := schema.NewConnection(db.DB)
