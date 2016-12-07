@@ -1,18 +1,15 @@
 package migrations
 
 import (
-	"fmt"
-	"os"
-	"time"
 	"database/sql"
+	"fmt"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/altipla-consulting/schema"
 	"github.com/altipla-consulting/schema/column"
 	"github.com/juju/errors"
 )
-
-const tableMigrations = "migrations"
 
 type M struct {
 	Name  string
@@ -35,18 +32,25 @@ func RunConnection(db *sql.DB, conn *schema.Connection, migrations []M) error {
 		column.String("name", 191).PrimaryKey(),
 		column.DateTime("runned_at").DefaultCurrent(),
 	}
-	if err := conn.CreateTableIfNotExists(tableMigrations, columns); err != nil {
+	if err := conn.CreateTableIfNotExists("migrations", columns); err != nil {
 		return errors.Trace(err)
 	}
 
-	collection := dbcollections.Table(tableMigrations)
-	stored := []*appliedMigration{}
-	if err := collection.OrderBy("runned_at").All(&stored); err != nil {
-	  return errors.Trace(err)
-	}
 	applied := map[string]bool{}
-	for _, m := range stored {
-		applied[m.Name] = true
+	rows, err := db.Query(`SELECT name FROM migrations ORDER BY runned_at`)
+	if err != nil {
+		return errors.Trace(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return errors.Trace(err)
+		}
+		applied[name] = true
+	}
+	if err := rows.Err(); err != nil {
+		return errors.Trace(err)
 	}
 
 	for i, migration := range migrations {
@@ -57,8 +61,8 @@ func RunConnection(db *sql.DB, conn *schema.Connection, migrations []M) error {
 				return errors.Annotatef(err, "migration %s failed", name)
 			}
 
-			if err := collection.Insert(&appliedMigration{Name: name}); err != nil {
-			  return errors.Trace(err)
+			if _, err := db.Exec(`INSERT INTO migrations(name) VALUES (?)`, name); err != nil {
+				return errors.Trace(err)
 			}
 		}
 	}
