@@ -11,7 +11,7 @@ import (
 	"github.com/juju/errors"
 )
 
-type M struct {
+type Migration struct {
 	Name  string
 	Apply func(db *sql.DB, conn *schema.Connection) error
 }
@@ -21,11 +21,11 @@ type appliedMigration struct {
 	RunnedAt time.Time
 }
 
-func Run(db *sql.DB, migrations []M) error {
+func Run(db *sql.DB, migrations []Migration) error {
 	return errors.Trace(RunConnection(db, schema.NewConnection(db), migrations))
 }
 
-func RunConnection(db *sql.DB, conn *schema.Connection, migrations []M) error {
+func RunConnection(db *sql.DB, conn *schema.Connection, migrations []Migration) error {
 	logrus.WithFields(logrus.Fields{"number": len(migrations)}).Info("run migrations")
 
 	columns := []schema.Column{
